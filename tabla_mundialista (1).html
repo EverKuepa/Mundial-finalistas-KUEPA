@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabla de Posiciones — iMundial Kuepa!</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto+Condensed:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0e1a;font-family:'Roboto Condensed',sans-serif;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px}
+.container{width:100%;max-width:780px;background:rgba(10,14,26,0.97);border-radius:16px;overflow:hidden;border:1px solid rgba(201,168,76,0.25)}
+.header{background:#0d1b3e;position:relative;padding:32px 24px 24px;text-align:center}
+.header-overlay{position:absolute;inset:0;background:rgba(10,14,26,0.7)}
+.header-content{position:relative;z-index:1}
+.header-title{font-family:'Playfair Display',Georgia,serif;font-size:26px;font-weight:700;color:#C9A84C;letter-spacing:.04em;text-transform:uppercase}
+.header-sub{font-size:12px;color:#7a8ab0;letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+.gold-line{width:60px;height:2px;background:#C9A84C;margin:10px auto 0;border-radius:1px}
+.table-wrap{padding:0 20px 20px}
+.t-head{display:grid;grid-template-columns:52px 1fr 72px 72px 90px;padding:10px 14px;background:#111827;border-radius:8px 8px 0 0;border-bottom:1px solid rgba(201,168,76,0.3);margin-top:16px}
+.th{font-size:10px;color:#C9A84C;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.th.c{text-align:center}
+.t-body{border:1px solid rgba(201,168,76,0.15);border-top:none;border-radius:0 0 8px 8px;overflow:hidden}
+.t-row{display:grid;grid-template-columns:52px 1fr 72px 72px 90px;padding:11px 14px;align-items:center;border-bottom:1px solid rgba(255,255,255,0.04)}
+.t-row:last-child{border-bottom:none}
+.t-row.r1{background:rgba(201,168,76,0.10);border-left:3px solid #C9A84C}
+.t-row.r2{background:rgba(180,178,169,0.06);border-left:3px solid #B4B2A9}
+.t-row.r3{background:rgba(205,127,50,0.06);border-left:3px solid #CD7F32}
+.t-row.rn{background:rgba(255,255,255,0.02);border-left:3px solid transparent}
+.rank-cell{display:flex;align-items:center;gap:4px}
+.rank-num{font-size:15px;font-weight:700;min-width:18px}
+.c1{color:#C9A84C}.c2{color:#B4B2A9}.c3{color:#CD7F32}.cn{color:#3d4a66}
+.medal{font-size:16px;line-height:1}
+.name{font-size:14px;color:#e8eaf0;font-weight:500}
+.estado{font-size:11px;margin-top:2px}
+.ok{color:#22c55e}.mora{color:#ef4444}.saldo{color:#C9A84C}.abono{color:#60a5fa}
+.cell-num{font-size:13px;color:#94a3b8;text-align:center}
+.pts-cell{text-align:center}
+.pts-val{font-size:17px;font-weight:700}
+.bar-wrap{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px}
+.footer{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid rgba(255,255,255,0.05)}
+.footer-txt{font-size:11px;color:#4a5568}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:5px;vertical-align:middle;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.msg{text-align:center;padding:32px;color:#4a5568;font-size:14px}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-overlay"></div>
+    <div class="header-content">
+      <div style="font-size:28px;margin-bottom:6px">🏆</div>
+      <div class="header-title">Tabla de Posiciones</div>
+      <div class="header-sub">iMundial Kuepa! — Clasificación en vivo</div>
+      <div class="gold-line"></div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="t-head">
+      <span class="th">#</span>
+      <span class="th">Participante</span>
+      <span class="th c">Pagos</span>
+      <span class="th c">Pronóst.</span>
+      <span class="th c">Total</span>
+    </div>
+    <div class="t-body" id="tbody">
+      <div class="msg">Cargando datos...</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-txt"><span class="live-dot"></span><span id="status">Conectando con Google Sheets...</span></div>
+    <div class="footer-txt" id="last-update"></div>
+  </div>
+</div>
+
+<script>
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQwsqHeK9kWiwTsbz8TV5H_Vy3YcNVJ5Rrzsuk0GYG0l_qAeKyzIRSUoBFYpQpktPKai_Jws5WovmcU/pub?gid=87807535&single=true&output=csv';
+
+const MEDALS = ['🥇','🥈','🥉'];
+const ROW_CLS = ['r1','r2','r3','rn'];
+const BAR_COLORS = ['#C9A84C','#B4B2A9','#CD7F32','#378ADD'];
+const RANK_CLS = ['c1','c2','c3','cn'];
+
+function estadoClass(e){
+  const v=(e||'').toLowerCase();
+  if(v.includes('día')||v.includes('dia')) return 'ok';
+  if(v.includes('saldó')||v.includes('saldo')) return 'saldo';
+  if(v.includes('mora')) return 'mora';
+  if(v.includes('abonó')||v.includes('abono')) return 'abono';
+  return '';
+}
+
+function parseCSV(text){
+  const lines=text.trim().split('\n');
+  const headers=lines[0].split(',').map(h=>h.replace(/"/g,'').trim());
+  console.log('Columnas detectadas:', headers);
+  return lines.slice(1).map(line=>{
+    const vals=[];
+    let cur='',inQ=false;
+    for(let c of line){
+      if(c==='"'){inQ=!inQ}
+      else if(c===','&&!inQ){vals.push(cur);cur=''}
+      else{cur+=c}
+    }
+    vals.push(cur);
+    const obj={};
+    headers.forEach((h,i)=>obj[h]=(vals[i]||'').replace(/"/g,'').trim());
+    return obj;
+  }).filter(r=>r[headers[0]]);
+}
+
+function render(rows){
+  // Busca columnas flexiblemente
+  const get=(r,opts)=>{
+    for(const k of opts){
+      const found=Object.keys(r).find(h=>h.toLowerCase().includes(k.toLowerCase()));
+      if(found&&r[found]) return r[found];
+    }
+    return '0';
+  };
+
+  const mapped = rows.map(r=>({
+    nombre: get(r,['nombre completo','nombre']),
+    pagos:  parseFloat(get(r,['puntos por pagos','puntos pagos','total pagos'])) || 0,
+    pron:   parseFloat(get(r,['pronostico','pronóstico','total puntos','puntos pronostico'])) || 0,
+    estado: get(r,['estado','estar al día','al día'])
+  })).filter(r=>r.nombre && r.nombre !== '0');
+
+  const sorted=[...mapped].sort((a,b)=>(b.pagos+b.pron)-(a.pagos+a.pron));
+  const maxPts=Math.max(...sorted.map(r=>r.pagos+r.pron),1);
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+
+  if(sorted.length===0){
+    tbody.innerHTML='<div class="msg">No se encontraron registros en el Sheet</div>';
+    return;
+  }
+
+  sorted.forEach((r,i)=>{
+    const total=r.pagos+r.pron;
+    const pct=Math.round((total/maxPts)*100);
+    const cls=i<3?ROW_CLS[i]:'rn';
+    const nc=i<3?RANK_CLS[i]:'cn';
+    const bc=i<3?BAR_COLORS[i]:BAR_COLORS[3];
+    const div=document.createElement('div');
+    div.className='t-row '+cls;
+    div.innerHTML=`
+      <div class="rank-cell">
+        <span class="rank-num ${nc}">${i+1}</span>
+        ${i<3?`<span class="medal">${MEDALS[i]}</span>`:''}
+      </div>
+      <div>
+        <div class="name">${r.nombre}</div>
+        <div class="estado ${estadoClass(r.estado)}">${r.estado||'—'}</div>
+      </div>
+      <div class="cell-num">${r.pagos}</div>
+      <div class="cell-num">${r.pron}</div>
+      <div class="pts-cell">
+        <div class="pts-val ${nc}">${total}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${bc}"></div></div>
+      </div>`;
+    tbody.appendChild(div);
+  });
+
+  const now=new Date();
+  document.getElementById('last-update').textContent='Actualizado: '+now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('status').textContent='Conectado — '+sorted.length+' participantes';
+}
+
+function loadData(){
+  fetch(SHEET_URL+'&t='+Date.now())
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
+    .then(text=>{render(parseCSV(text));})
+    .catch(err=>{
+      document.getElementById('status').textContent='Error: '+err.message;
+      document.getElementById('tbody').innerHTML='<div class="msg">No se pudo cargar el Sheet.<br><small>'+err.message+'</small></div>';
+    });
+}
+
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
