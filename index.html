@@ -125,7 +125,10 @@ function render(rows) {
   const mapped = rows.map(r => ({
     nombre:    findCol(r, ['nombre completo', 'nombre']),
     marcador:  findCol(r, ['marcador para el partido', 'colombia vs portugal', 'seleccione el marcador']),
-    totalpagos: parseFloat(findCol(r, ['total pagos'])) || 0,
+    totalpagos: (parseFloat(findCol(r, ['total pagos'])) || 0).toLocaleString('es-CO', {
+  style: 'currency',
+  currency: 'COP'
+}),
     ptspagos:   parseFloat(findCol(r, ['puntos por pagos', 'pts por pagos'])) || 0,
     totalpts:   parseFloat(findCol(r, ['total puntos', 'total pts'])) || 0,
   })).filter(r => r.nombre);
